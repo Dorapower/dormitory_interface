@@ -2,40 +2,40 @@ package web
 
 import (
 	"dormitory_interface/sql"
-	"io"
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func changePassword(username string, password string) bool {
-	if !testValid(password) {
+type PasswordInput struct {
+	OldPassword string `form:"old_password" json:"old_password" binding:"required"`
+	NewPassword string `form:"new_password" json:"new_password" binding:"required"`
+}
+
+func testValid(password string) bool {
+	if len(password) < 6 {
 		return false
 	}
-	sql.UpdatePassword(username, password)
 	return true
 }
 
-func PasswordHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		panic(err)
-	}
-	if !CheckSession(r) {
-		_, err := io.WriteString(w, "Please login first")
-		if err != nil {
-			panic(err)
-		}
+func PasswordHandler(ctx *gin.Context) {
+	value, _ := ctx.Get("JWT_PAYLOAD")
+	username := value.(jwt.MapClaims)["username"].(string)
+
+	var passwordInput PasswordInput
+	if err := ctx.ShouldBind(&passwordInput); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	username := r.Form.Get("username")
-	password := r.Form.Get("password")
-	if changePassword(username, password) {
-		_, err := io.WriteString(w, "Change password success")
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		_, err := io.WriteString(w, "Change password failed")
-		if err != nil {
-			panic(err)
-		}
+	if !sql.QueryLogin(username, passwordInput.OldPassword) {
+		ctx.JSON(400, gin.H{"error": "Wrong password"})
+		return
 	}
+	if !testValid(passwordInput.NewPassword) {
+		ctx.JSON(400, gin.H{"error": "Invalid password"})
+		return
+	}
+	sql.UpdatePassword(username, passwordInput.NewPassword)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Password changed"})
 }

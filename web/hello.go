@@ -1,13 +1,10 @@
 package web
 
 import (
-	"io"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func HelloHandler(w http.ResponseWriter, _ *http.Request) {
-	_, err := io.WriteString(w, "Hello World")
-	if err != nil {
-		panic(err)
-	}
+func HelloHandler(ctx *gin.Context) {
+	ctx.String(http.StatusOK, "Hello world")
 }

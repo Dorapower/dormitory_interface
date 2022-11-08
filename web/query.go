@@ -2,87 +2,27 @@ package web
 
 import (
 	"dormitory_interface/sql"
-	"encoding/json"
-	"fmt"
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func StudentInfoHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckSession(r) {
-		_, err := w.Write([]byte("Please login first"))
-		if err != nil {
-			panic(err)
-		}
-		return
-	}
-	if err := r.ParseForm(); err != nil {
-		panic(err)
-	}
-	username := r.Form.Get("username")
-	if !testValid(username) {
-		_, err := w.Write([]byte("Invalid username"))
-		fmt.Println(username)
-		if err != nil {
-			panic(err)
-		}
-		return
-	}
+func StudentInfoHandler(ctx *gin.Context) {
+	value, _ := ctx.Get("JWT_PAYLOAD")
+	username := value.(jwt.MapClaims)["username"].(string)
 	data := sql.QueryStudent(username)
-	fmt.Println(data)
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		panic(err)
-	}
+	ctx.JSON(http.StatusOK, data)
 }
 
-func BuildingListHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckSession(r) {
-		_, err := w.Write([]byte("Please login first"))
-		if err != nil {
-			panic(err)
-		}
-		return
-	}
-	if err := r.ParseForm(); err != nil {
-		panic(err)
-	}
-	username := r.Form.Get("username")
-	if !testValid(username) {
-		_, err := w.Write([]byte("Invalid username"))
-		fmt.Println(username)
-		if err != nil {
-			panic(err)
-		}
-		return
-	}
+func BuildingListHandler(ctx *gin.Context) {
+	value, _ := ctx.Get("JWT_PAYLOAD")
+	username := value.(jwt.MapClaims)["username"].(string)
 	data := sql.QueryBuildingList(username)
-	fmt.Println(data)
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		panic(err)
-	}
+	ctx.JSON(http.StatusOK, data)
 }
 
-func AvaliableCountHandler(w http.ResponseWriter, r *http.Request) {
-	if !CheckSession(r) {
-		_, err := w.Write([]byte("Please login first"))
-		if err != nil {
-			panic(err)
-		}
-		return
-	}
-	if err := r.ParseForm(); err != nil {
-		panic(err)
-	}
-	buildingNo := r.Form.Get("building")
-
-	data := sql.QueryAvaliableCount(buildingNo)
-	fmt.Println(data)
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		panic(err)
-	}
+func AvailableCountHandler(ctx *gin.Context) {
+	buildingNo := ctx.Query("building")
+	data := sql.QueryAvailableCount(buildingNo)
+	ctx.JSON(http.StatusOK, data)
 }
